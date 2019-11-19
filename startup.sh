@@ -1,4 +1,4 @@
 #!/bin/bash
 
-mkdir -p /data/dists/trusty/main/binary-amd64/
+mkdir -p /data/dists/xenial/main/binary-amd64/
 exec /usr/bin/supervisord -n

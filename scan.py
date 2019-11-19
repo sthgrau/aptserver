@@ -7,6 +7,7 @@ from gevent import spawn
 import signal
 from gevent import select
 import os
+import sys
 
 
 log = open('/dev/stdout', 'w')
@@ -21,14 +22,47 @@ def info(msg):
 
 
 def do_scan():
-    info('Scanning...')
-    for dist in os.getenv('DISTS', 'trusty').split(','):
-        for arch in os.getenv('ARCHS', 'amd64,i386').split(','):
-            path = '/data/dists/{}/main/binary-{}'.format(dist, arch)
-            if not os.path.exists(path):
-                os.makedirs(path)
-            cmd = 'dpkg-scanpackages -m . | gzip -9c > {0}/Packages.gz'.format(path)
+    print('Scanning...')
+    path = '/data/incoming'
+    owner = '{}@{}'.format(os.getenv('USER'),os.getenv('HOST'))
+    arches = os.getenv('ARCHS', 'amd64,i386').split(',')
+    for file in os.listdir(path):
+        for dist in os.getenv('DISTS', 'xenial').split(','):
+            for arch in arches:
+                mypath = '/data/dists/{}/main/binary-{}'.format(dist, arch)
+                srcfile = '{}/{}'.format(path, file)
+                myfile = '{}/{}'.format(mypath, file)
+                if not os.path.exists(mypath):
+                    os.makedirs(mypath)
+                if not os.path.exists(myfile):
+                    os.symlink(srcfile,myfile)
+
+    for dist in os.getenv('DISTS', 'xenial').split(','):
+        distpath = '/data/dists/{}'.format(dist)
+        for arch in arches:
+            archpath = '{}/main/binary-{}'.format(distpath, arch)
+            relfile = '{}/{}'.format(archpath, "Release")
+            if not os.path.exists(relfile):
+                myrel = open(relfile,'w+')
+                myrel.write("""Archive: {}
+                Origin: {}
+                Label: {}
+                Architecture: {}
+                """.format(owner,owner,owner,arch));
+                myrel.close()
+            cmd = 'dpkg-scanpackages -m . | gzip -9c > {0}/Packages.gz'.format(archpath)
             sp.check_call(cmd, shell=True, close_fds=True)
+        relfile = '{}/{}'.format(distpath, "Release")
+        if not os.path.exists(relfile):
+                myrel = open(relfile,'w+')
+                myrel.write("""Origin: {}
+                Label: {}
+                Suite: {}
+                Codename: {}
+                Architectures: {}
+                Description: {}
+                """.format(owner,owner,dist,dist," ".join(arches),owner));
+                myrel.close()
     info('Scanning...done')
 
 
@@ -97,4 +131,5 @@ def main():
 
 
 if __name__ == "__main__":
+    do_scan()
     main()
