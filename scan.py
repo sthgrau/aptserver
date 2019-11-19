@@ -22,6 +22,7 @@ def info(msg):
 
 
 def do_scan():
+<<<<<<< HEAD
     print('Scanning...')
     path = '/data/incoming'
     owner = '{}@{}'.format(os.getenv('USER'),os.getenv('HOST'))
@@ -51,6 +52,15 @@ def do_scan():
                 """.format(owner,owner,owner,arch));
                 myrel.close()
             cmd = 'dpkg-scanpackages -m . | gzip -9c > {0}/Packages.gz'.format(archpath)
+=======
+    info('Scanning...')
+    for dist in os.getenv('DISTS', 'xenial').split(','):
+        for arch in os.getenv('ARCHS', 'amd64,i386').split(','):
+            path = '/data/dists/{}/main/binary-{}'.format(dist, arch)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            cmd = 'dpkg-scanpackages -m . | gzip -9c > {0}/Packages.gz'.format(path)
+>>>>>>> 44b63e71fb792e71188b4a5e45623113876d9227
             sp.check_call(cmd, shell=True, close_fds=True)
         relfile = '{}/{}'.format(distpath, "Release")
         if not os.path.exists(relfile):
